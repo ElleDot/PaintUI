@@ -17,6 +17,7 @@ PGraphics GUI;
 PGraphics drawLayer;
 PGraphics lineLayer;
 PGraphics cursorLayer;
+PImage logoImage;
 
 color currentBackground;
 color targetBackground;
@@ -33,6 +34,7 @@ void setup() {
   canvasColor = #ffffff;
   background(canvasColor);
   cp5 = new ControlP5(this);
+  cp5.setAutoDraw(false);
 
   // Creates an 'on/off' style switch for dark mode
   cp5.addToggle("darkMode")
@@ -57,7 +59,7 @@ void setup() {
     .setPosition(int(width*0.11), int(height*0.02))
     .setWidth(int(width*0.08))
     .setHeight(int(height*0.05))
-    .setRange(1, 40)                                                 // The thickness value of the brush
+    .setRange(1, 30)                                                 // The thickness value of the brush
     .setValue(15)                                                    // Default value on app launch                         
     //.setNumberOfTickMarks(39)                                      // Number of ticks on the slider. (Keeps things as ints)
     .setSliderMode(Slider.FIX)                                       // Use FLEXIBLE as an alternative slider style
@@ -87,14 +89,14 @@ void setup() {
     .setSliderMode(Slider.FIX)                                       // Use FLEXIBLE as an alternative slider style
     .setCaptionLabel("")
     ;
-    
+
   // This is the bank of buttons for tool selection. (keyboard shortcuts still work)  
-  cp5.addButton("tool0").setValue(0).setPosition(width*0.46,height*0.03).setSize(int(width*0.03),(int(height*0.05)));
-  cp5.addButton("tool1").setValue(0).setPosition(width*0.51,height*0.03).setSize(int(width*0.03),(int(height*0.05)));
-  cp5.addButton("tool2").setValue(0).setPosition(width*0.56,height*0.03).setSize(int(width*0.03),(int(height*0.05)));
-  cp5.addButton("tool3").setValue(0).setPosition(width*0.61,height*0.03).setSize(int(width*0.03),(int(height*0.05)));
-  cp5.addButton("tool4").setValue(0).setPosition(width*0.66,height*0.03).setSize(int(width*0.03),(int(height*0.05)));
-  cp5.addButton("tool5").setValue(0).setPosition(width*0.71,height*0.03).setSize(int(width*0.03),(int(height*0.05)));
+  cp5.addButton("nothingSelected").setValue(0).setPosition(width*0.46, height*0.025).setSize(int(width*0.03), (int(height*0.05)));
+  cp5.addButton("brushSelected").setValue(0).setPosition(width*0.51, height*0.025).setSize(int(width*0.03), (int(height*0.05)));
+  cp5.addButton("eraserSelected").setValue(0).setPosition(width*0.56, height*0.025).setSize(int(width*0.03), (int(height*0.05)));
+  cp5.addButton("lineSelected").setValue(0).setPosition(width*0.61, height*0.025).setSize(int(width*0.03), (int(height*0.05)));
+  cp5.addButton("canvasSelected").setValue(0).setPosition(width*0.66, height*0.025).setSize(int(width*0.03), (int(height*0.05)));
+  cp5.addButton("clearCanvas").setValue(0).setPosition(width*0.71, height*0.025).setSize(int(width*0.03), (int(height*0.05)));
 
   // The three layers I'm using for the drawing of everything in PaintUI
   GUI = createGraphics(width, height);
@@ -109,19 +111,43 @@ void draw() {
   currentBackground = lerpColor(currentBackground, targetBackground, 0.1);
   background(canvasColor);
   GUI.beginDraw();  
-  //GUI.background(currentBackground);                                 // Clean-wipes last frame's UI to rebuild over it
-  
-  /* 
-  This method of UI drawing uses boxes overlaid onto the drawing layer to bound the canvas better.
-  The UI is redrawn on top of the current drawing every frame, so there's no spill over at all.
-  I found this better than using a simple background, then bounding the mouse rigorously every frame.
-  This was is way less computationally difficult in the end, if a little inelegant.
-  */
-  GUI.fill(currentBackground);                                       //
-  GUI.rect(0,0,width,height*0.1);                                    // The top bar of the GUI
-  GUI.rect(width*0.8,height*0.1,width,height);                       // The side bar on the right
-  GUI.rect(0,height*0.95,width*0.8,height);                          // The final part of the GUI Frame
   GUI.noStroke();
+
+  /* 
+   This method of UI drawing uses boxes overlaid onto the drawing layer to bound the canvas better.
+   The UI is redrawn on top of the current drawing every frame, so there's no spill over at all.
+   I found this better than using a simple background, then bounding the mouse rigorously every frame.
+   This was is way less computationally difficult in the end, if a little inelegant.
+   */
+  GUI.fill(currentBackground);                                       //
+  GUI.rect(0, 0, width, height*0.1);                                    // The top bar of the GUI
+  GUI.rect(width*0.8, height*0.1, width, height);                       // The side bar on the right
+  GUI.rect(0, height*0.95, width*0.8, height);                          // The final part of the GUI Frame
+
+  //now that the base is redrawn, everything else can be put on top of it
+
+  GUI.fill(currentBrushColor, 128);                                   // Active tool indicator fill colour is the same as the brush
+  switch(toolNumber) {
+  case 0:
+    GUI.rect(width*0.45, 0, width*0.05, height*0.1);
+    break;
+  case 1:
+    GUI.rect(width*0.5, 0, width*0.05, height*0.1);
+    break;
+  case 2:
+    GUI.rect(width*0.55, 0, width*0.05, height*0.1);
+    break;
+  case 3:
+    GUI.rect(width*0.6, 0, width*0.05, height*0.1);
+    break;
+  case 4:
+    GUI.rect(width*0.65, 0, width*0.05, height*0.1);
+    break;
+  }
+
+  if (keyPressed && key== 'x') {
+    GUI.rect(width*0.7, 0, width*0.05, height*0.1);
+  }
 
   int boxWidth = int(width*0.025);                                   // Define the standard box width, fitting 8 into the side-panel.
   for (int i = 0; i < 8; i++) {                                      // Loop for generating shades of black, grey and white
@@ -139,8 +165,12 @@ void draw() {
     }
   }
 
+  modifierCheck();
+  
   GUI.fill(currentBrushColor);                                        // sets preview to brushColor
-  GUI.stroke(currentBrushColor);
+  GUI.stroke(currentTextColor);
+  
+  
 
   // Checks to see if the brush is round or squared and displays preview of brush
   if (brushShape == 0) {
@@ -168,13 +198,13 @@ void draw() {
   GUI.text("Saturation", width*0.85, height*0.08);
   GUI.text("Brightness", width*0.95, height*0.08);
   if (toolNumber == 2) {
-    GUI.text("Eraser Size", (width*0.15), (height*0.08)); 
+    GUI.text("Eraser Size", (width*0.15), (height*0.08));
   } else if (toolNumber == 3) {
-    GUI.text("Line Thickness", (width*0.15), (height*0.08)); 
+    GUI.text("Line Thickness", (width*0.15), (height*0.08));
   } else {
     GUI.text("Brush Size", (width*0.15), (height*0.08));
   }
-  
+
   GUI.text("Retro Brush", (width*0.35), (height*0.07));
   GUI.text(brushSize, (width * 0.25), (height*0.055)+(brushSize/2)); // Shows the value of the current brush size
 
@@ -183,17 +213,17 @@ void draw() {
   GUI.text(getToolName(toolNumber), (width*0.01), (height*0.06));    // Current tool label update
   GUI.fill(canvasColor);                                             // Set fill back to white for draw environment
   GUI.rectMode(CORNER);
+  GUI.image(logoImage, width*0.82, height*0.87, width*0.16, height*0.06);
+
   GUI.endDraw();
 
   drawLayer.beginDraw();
-  
-  if (brushShape == 0) {
-    if (toolNumber == 1) { drawLayer.stroke(currentBrushColor); } else { drawLayer.stroke(canvasColor); }
-    drawLayer.strokeWeight(brushSize);
-  } else {
-    drawLayer.noStroke();
+  drawLayer.strokeWeight(brushSize);
+  if (toolNumber == 1) { 
+    drawLayer.stroke(currentBrushColor);
+  } else { 
+    drawLayer.stroke(canvasColor);
   }
-  
   attemptDraw();
   drawLayer.endDraw();
 
@@ -204,16 +234,20 @@ void draw() {
   // Draw the artwork next, with the Cursor on the very top.
   image(drawLayer, 0, 0);
   image(GUI, 0, 0);
-  image(lineLayer,0,0);
+  image(lineLayer, 0, 0);
+  cp5.draw();
   image(cursorLayer, 0, 0);
 
-  // Uncomment to see lines every 10% of the inner window width
-  //for (int i = 0; i < 10; i++) {
-  //  line((i*width/10), 0, (i*width/10), height);
-  //}
+  // Uncomment to see lines every 10% of the inner window width and height
+  for (int i = 0; i < 10; i++) {
+    line((i*width/10), 0, (i*width/10), height);
+    line(0, (i*height/10), width, (i*height/10));
+  }
 }
 
 void keyPressed() {
+
+  GUI.fill(216, 190, 216);
 
   switch (key) {
 
@@ -233,9 +267,7 @@ void keyPressed() {
     canvasSelected();
     break;
   case 'x':
-    drawLayer.clear();
-    println("Canvas cleared!");
-    canvasColor=#ffffff;
+    clearCanvas();
     break;
   }
 }
@@ -261,28 +293,43 @@ void canvasSelected() {
   toolNumber = 4;
 }
 
+void clearCanvas() {
+  drawLayer.clear();
+  println("Canvas cleared!");
+  canvasColor=#ffffff;
+}
+
 void mousePressed() {
-  
-  if (toolNumber == 4 && (inBoundsCheck(true) || (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.95))) {
-    canvasColor = get(pmouseX-1, pmouseY-1);
-  } else if (pmouseX > width*0.8) {
+
+  if (toolNumber == 4 && (inBoundsCheck(true) || (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.42))) {
+    canvasColor = get(mouseX-1, mouseY-1);
+  } else if (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.42) {
     currentBrushColor = get(pmouseX-1, pmouseY-1); 
     drawLayer.fill(currentBrushColor);
-    println("Brush Colour changed");
+    //println("Brush Colour changed");
   }
-  
-  if (toolNumber == 3) { 
-    clickState = 1;
-    fromX = pmouseX;
-    fromY = pmouseY;
+
+  if (toolNumber == 3) {
+
+    if (inBoundsCheck(true)) {
+      clickState = 1;
+      fromX = pmouseX;
+      fromY = pmouseY;
+    } else {
+
+      // This will draw a point line at 0,0, preventing any buggy messes from occuring when starting/ending a line out of bounds
+      fromX = 0;
+      fromY = 0;
+      toX = 0;
+      toY = 0;
+    }
   }
-  
 }
 
 void mouseReleased() {
-  
+
   if (toolNumber == 3) {
-    
+
     if (inBoundsCheck(true)) {
       clickState = 0;
       lineQueued = true;
@@ -290,10 +337,7 @@ void mouseReleased() {
       clickState = 0;
       lineLayer.clear();
     }
-    
-    
   }
-  
 }
 
 // Checks to see if the mouse is in the drawing box's bounds, allowing drawing
@@ -340,35 +384,39 @@ void drawCursor() {
     // Select tool, no drawing capability
     cursorLayer.fill(255);
     break;
+
   case 1:
     //The brush tool
     if (inBoundsCheck(true)) {
       cursorLayer.noFill();
       if (brushShape == 0) {
-         cursorLayer.circle(pmouseX,pmouseY,brushSize); 
+        cursorLayer.circle(pmouseX, pmouseY, brushSize);
       } else {
         cursorLayer.rectMode(CENTER);
-        cursorLayer.rect(pmouseX,pmouseY,brushSize,brushSize);
+        cursorLayer.rect(pmouseX, pmouseY, brushSize, brushSize);
       }
     }
     cursorLayer.fill(#ff0000);
     break;
+
   case 2:
     // The eraser tool
     if (inBoundsCheck(true)) {
       cursorLayer.noFill();
       if (brushShape == 0) {
-         cursorLayer.circle(pmouseX,pmouseY,brushSize); 
+        cursorLayer.circle(pmouseX, pmouseY, brushSize);
       } else {
         cursorLayer.rectMode(CENTER);
-        cursorLayer.rect(pmouseX,pmouseY,brushSize,brushSize);
+        cursorLayer.rect(pmouseX, pmouseY, brushSize, brushSize);
       }
     }
     cursorLayer.fill(#00ff00);
     break;
+
   case 3:
     cursorLayer.fill(#0000ff);
     break;
+
   case 4:
     cursorLayer.fill(#808080);
     break;
@@ -382,44 +430,59 @@ void drawCursor() {
 }
 
 void attemptDraw() {
-  
+
   lineLayer.beginDraw();
 
   if (inBoundsCheck(true) && mousePressed == true) {
-  
+
     if (toolNumber == 1 || toolNumber == 2) {
       if (brushShape == 0) {
         //drawLayer.ellipse(pmouseX, pmouseY, brushSize, brushSize);    // Old method, lots of gaps but better bounding
-        drawLayer.line(mouseX, mouseY, pmouseX, pmouseY);               // New method, looks great but gross bounding
+        drawLayer.strokeCap(ROUND);
+        //drawLayer.line(mouseX, mouseY, pmouseX, pmouseY);               // New method, looks great but gross bounding
       } else {
-        drawLayer.rect(pmouseX, pmouseY, brushSize, brushSize);
+        drawLayer.strokeCap(SQUARE);
       }
-      
+      drawLayer.line(mouseX, mouseY, pmouseX, pmouseY);
     } else if (toolNumber == 3 && clickState == 1) {
-      
+
       if (inBoundsCheck(true)) {
         toX = pmouseX;
         toY = pmouseY;
         lineLayer.clear();
         lineLayer.strokeWeight(brushSize);
-        lineLayer.stroke(#ff00ff);
-        lineLayer.line(fromX,fromY,toX,toY);
+        lineLayer.stroke(#ff00ff, 128);
+        if (brushShape == 0) { 
+          lineLayer.strokeCap(ROUND);
+        } else {
+          lineLayer.strokeCap(SQUARE);
+        }
+        lineLayer.line(fromX, fromY, toX, toY);
       }
-      
     }
-  
   }
-  
+
   if (lineQueued) {
-      drawLayer.strokeWeight(brushSize);
-      drawLayer.stroke(currentBrushColor);
-      drawLayer.line(fromX,fromY,toX,toY); 
-      lineQueued = false;
-      lineLayer.clear();
-    }
-    
+    drawLayer.strokeWeight(brushSize);
+    drawLayer.stroke(currentBrushColor);
+    drawLayer.line(fromX, fromY, toX, toY); 
+    lineQueued = false;
+    lineLayer.clear();
+  }
   lineLayer.endDraw();
-  
+}
+
+void modifierCheck() {
+
+  if (keyPressed && key == CODED && keyCode == SHIFT) {
+    brushSize = int(cp5.getController("brushSize").getValue())*2;
+    GUI.fill(currentTextColor);
+    GUI.text("x2", width*0.27+brushSize/4, height*0.05-5);
+  } else {
+    GUI.fill(currentBackground);
+    GUI.text("x2", width*0.27+brushSize/4, height*0.05-5);
+    brushSize = int(cp5.getController("brushSize").getValue());
+  }
 }
 
 public void controlEvent(ControlEvent theEvent) {
@@ -438,9 +501,11 @@ void squareBrush(boolean isSquare) {
 // The toggle function for the dark mode feature.
 void darkMode(boolean isDark) {
   if (isDark==true) {
+    logoImage = loadImage("logol.png");
     targetBackground=#3c3c3c;
     currentTextColor=#d2d2d2;
   } else {
+    logoImage = loadImage("logod.png");
     targetBackground=#d2d2d2;
     currentTextColor=#3c3c3c;
   }
