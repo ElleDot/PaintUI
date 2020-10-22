@@ -11,27 +11,29 @@ int fromX;
 int fromY;
 int toX;
 int toY;
+int initialiser;
 
 boolean lineQueued = false;
 boolean undoQueued = false;
 boolean saveStateQueued = false;
 boolean gridActive = true;                                           // For some reason, I can't stop the CP5 objects from
-boolean darkActive = true;                                           // Firing on launch. true gets inverted to false at start
+boolean darkActive = false;                                          // Firing on launch. true gets inverted to false at start
 boolean isSquare = true;
 
+PGraphics canvasLayer;
 PGraphics GUI;
 PGraphics drawLayer;
 PGraphics lineLayer;
 PGraphics gridLayer;
 PGraphics cursorLayer;
+ArrayList<ArrayList<PImage>> savedStates = new ArrayList<ArrayList<PImage>>();
+
 PImage logoImage;
-ArrayList<PImage> savedStates = new ArrayList<PImage>();
-PImage currentState;
 
 color currentBackground;
 color targetBackground;
 color currentTextColor;
-color canvasColor;
+color canvasColor = #ffffff;
 color currentBrushColor = #000000;
 color oppositeTextColor;
 
@@ -42,8 +44,6 @@ void setup() {
   //size(800, 600);                                                  // Lower screen sizes actually run significantly faster...
   size(1280,800);
   noCursor();                                                        // Setting noCursor due to custom ones used by PaintUI
-  canvasColor = #ffffff;
-  background(canvasColor);
   cp5 = new ControlP5(this);
   cp5.setAutoDraw(false);
 
@@ -142,25 +142,28 @@ void setup() {
     .setBroadcast(true);
   
   // The three layers I'm using for the drawing of everything in PaintUI
+  canvasLayer = createGraphics(width,height);
   GUI = createGraphics(width, height);
   drawLayer = createGraphics(width, height);
   cursorLayer = createGraphics(width, height);
   lineLayer = createGraphics(width, height);
   gridLayer = createGraphics(width, height);
   
-  saveState();
+  queueSaveState();
 }
 
 void draw() {
 
   // Tries to make the UI panels match the current setting of light/dark
   currentBackground = lerpColor(currentBackground, targetBackground, 0.1);
-  background(canvasColor);
-  
+  canvasLayer.beginDraw();
   GUI.beginDraw();  
   drawLayer.beginDraw();
   gridLayer.beginDraw();
   cursorLayer.beginDraw();
+  
+  canvasLayer.fill(canvasColor);
+  canvasLayer.rect(0,0,width,height);
   
   GUI.noStroke();
 
@@ -206,7 +209,7 @@ void draw() {
   if (keyPressed && key == 'x')
     GUI.rect(width*0.7, 0, width*0.05, height*0.1);
   if (keyPressed && key == 'z')
-    GUI.rect(width*0.8, height*0.525, width*0.2, height*0.1);
+    GUI.rect(width*0.8, height*0.51, width*0.2, height*0.115);
   
   int boxWidth = int(width*0.025);                                   // Define the standard box width, fitting 8 into the side-panel.
   for (int i = 0; i < 8; i++) {                                      // Loop for generating shades of black, grey and white
@@ -240,11 +243,13 @@ if (isSquare == false) {
   GUI.fill(currentTextColor);                                        // sets text labels to correct contrasting colour
   GUI.stroke(currentTextColor);
   GUI.textAlign(LEFT, CENTER);
+  GUI.text("ElleDot 2020", width*0.818,height*0.95);
+  GUI.text("v1.0 - 21/10/20", width*0.818,height*0.9725);
   GUI.text("Dark Mode", width*0.08,height*0.9725);            // The actual drawing of all the labels
   GUI.text("Enable Grid", width*0.38,height*0.9725);
   GUI.text("Grid Lines", width*0.5,height*0.9725);
   GUI.text("Undo Action", (width*0.91), (height*0.575));
-  GUI.text("Retro Brush", (width*0.91), (height*0.675));             // 
+  GUI.text("Retro Brush", (width*0.91), (height*0.675));
   GUI.textAlign(CENTER, CENTER);
   GUI.text("Select", width*0.475, height*0.085);
   GUI.text("Brush", width*0.525, height*0.085);
@@ -262,6 +267,7 @@ if (isSquare == false) {
   GUI.text("X", width*0.725, height*0.013);
   GUI.text("Z", width*0.84, height*0.575);
   GUI.text("R", width*0.84, height*0.675);
+  GUI.text(savedStates.size()-1 + " steps back available",width*0.905, height*0.53);
   GUI.text("Saturation", width*0.85, height*0.08);
   GUI.text("Brightness", width*0.95, height*0.08);
   if (toolNumber == 2) {
@@ -317,22 +323,25 @@ if (isSquare == false) {
   drawCursor();
   // The end of the cursorLayer commands
   
-  if (saveStateQueued) {saveState();}                                // Check if any savestates or undos are queued
   if (undoQueued) {attemptUndo();}
   if (gridActive) {drawGrid();} else {gridLayer.clear();}
   
-  GUI.endDraw();                                                     // End drawing of layers all at once
+  canvasLayer.endDraw();
+  GUI.endDraw();                                                                    // End drawing of layers all at once
   drawLayer.endDraw();
   gridLayer.endDraw();
   cursorLayer.endDraw();
   
   // Draw the artwork next, with the Cursor on the very top.
+  image(canvasLayer,0,0);
   image(drawLayer, 0, 0);
   image(gridLayer,0,0);
   image(GUI, 0, 0);
   image(lineLayer, 0, 0);
   cp5.draw();
   image(cursorLayer, 0, 0);
+  
+  if (saveStateQueued) {saveState();}                                               // Check if any savestates or undos are queued
   
 }
 
@@ -376,7 +385,7 @@ void mousePressed() {
 
   if (toolNumber == 4 && (inBoundsCheck(true) || (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.42))) {
     canvasColor = get(mouseX-1, mouseY-1);
-    saveState();
+    queueSaveState();
   } else if (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.42) {
     currentBrushColor = get(pmouseX-1, pmouseY-1); 
     drawLayer.fill(currentBrushColor);
@@ -414,7 +423,7 @@ void mouseReleased() {
   }
   
   if (toolNumber > 0 && toolNumber < 5 && inBoundsCheck(true)) {
-    saveState();
+    queueSaveState();
   }
   
 }
@@ -425,26 +434,36 @@ void queueSaveState() {
 
 void saveState() {
   // Grabs the current screen and saves a PImage of it.
-  currentState = get(0,int(height*0.1),int(width*0.8),int(height*0.85));
-  currentState.save("data/saves/autosave.png");
+  PImage autosave;
+  autosave = get(0,int(height*0.1),int(width*0.8),int(height*0.85));
+  autosave.save("data/saves/autosave.png");
+  
+  ArrayList<PImage> currentScene = new ArrayList<PImage>();
+  PImage currentCanvas = canvasLayer.get(0,int(height*0.1),int(width*0.8),int(height*0.85));
+  PImage currentDrawLayer = drawLayer.get(0,int(height*0.1),int(width*0.8),int(height*0.85));
+  currentScene.add(currentCanvas);
+  currentScene.add(currentDrawLayer);
+  
   if (savedStates.size() > 10) {savedStates.remove(0);}
-  savedStates.add(currentState);
-  println(savedStates.size() + " items in the savestate array");
+  savedStates.add(currentScene);
   saveStateQueued = false;
 }
 
 void queueUndo() {
-  //clearCanvas();
   undoQueued = true;
-  
 }
 
 void attemptUndo() {
-  cursorLayer.clear();
-  if (savedStates.size() > 1) {                                      //size() starts at 1, where arrays start at 0...
-    drawLayer.image(savedStates.get(savedStates.size() - 2),0,height*0.1);
-    savedStates.remove(savedStates.size()-1);
-    println(savedStates.size() + " items in the savestate array");
+  if (savedStates.size() > 1) {                                                     //size() starts at 1, where arrays start at 0...
+    canvasLayer.clear();                                                            // Start by nuking the canvas and draw layers
+    drawLayer.clear();
+    
+    ArrayList<PImage> loadedScene = savedStates.get(savedStates.size()-2);          // load Array of layers for the last scene
+    canvasLayer.image(loadedScene.get(0),0,height*0.1);                             // set the canvas to the previous savestate
+    canvasColor = canvasLayer.get(1,int(height*0.1+1));                             // set the canvas colour too, so it doesn't get reset next frame
+    drawLayer.image(loadedScene.get(1),0,height*0.1);                               // redraw last savestate's drawlayer too
+    
+    savedStates.remove(savedStates.size()-1);                                       // Remove the now current state from the stack
   }
   undoQueued = false;
 }
@@ -497,8 +516,8 @@ void saveImage() {
   int s = second();
   
   String timeCode = y + "_" + mo + "_" + d + "_" + h + "-" + m + "-" + s; 
-  currentState = get(0,int(height*0.1),int(width*0.8),int(height*0.85));
-  currentState.save("data/saves/"+timeCode+".png");
+  PImage imageToSave = get(0,int(height*0.1),int(width*0.8),int(height*0.85));
+  imageToSave.save("data/saves/"+timeCode+".png");
   
 }
 
@@ -560,11 +579,11 @@ void drawCursor() {
     // Select tool, no drawing capability
     cursorLayer.fill(255);
     break;
-
   case 1:
     //The brush tool
     if (inBoundsCheck(true)) {
       cursorLayer.noFill();
+      cursorLayer.stroke(255-red(canvasColor),255-green(canvasColor),255-blue(canvasColor));
       if (isSquare == false) {
         cursorLayer.circle(pmouseX, pmouseY, brushSize);
       } else {
@@ -574,11 +593,11 @@ void drawCursor() {
     }
     cursorLayer.fill(#ff0000);
     break;
-
   case 2:
     // The eraser tool
     if (inBoundsCheck(true)) {
       cursorLayer.noFill();
+      cursorLayer.stroke(255-red(canvasColor),255-green(canvasColor),255-blue(canvasColor));
       if (isSquare == false) {
         cursorLayer.circle(pmouseX, pmouseY, brushSize);
       } else {
@@ -588,21 +607,29 @@ void drawCursor() {
     }
     cursorLayer.fill(#00ff00);
     break;
-
   case 3:
+    if (inBoundsCheck(true)) {
+      cursorLayer.noFill();
+      cursorLayer.stroke(255-red(canvasColor),255-green(canvasColor),255-blue(canvasColor));
+      if (isSquare == false) {
+        cursorLayer.circle(pmouseX, pmouseY, brushSize);
+      } else {
+        cursorLayer.rectMode(CENTER);
+        cursorLayer.rect(pmouseX, pmouseY, brushSize, brushSize);
+      }
+    }
     cursorLayer.fill(#0000ff);
     break;
-
   case 4:
     cursorLayer.fill(#808080);
     break;
   }
-
   if (mousePressed == false) {
     cursorLayer.triangle(pmouseX, pmouseY, pmouseX, (pmouseY+16), (pmouseX+12), (pmouseY+10));
   } else {
     cursorLayer.triangle(pmouseX, pmouseY, pmouseX, (pmouseY+8), (pmouseX+6), (pmouseY+5));
   }
+  
 }
 
 void attemptDraw() {
@@ -704,7 +731,7 @@ void clearCanvas() {
   drawLayer.clear();
   println("Canvas cleared!");
   canvasColor=#ffffff;
-  saveState();
+  queueSaveState();
 }
 
 // handles whether or not the retro brush shall be used.
