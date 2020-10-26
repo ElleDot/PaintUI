@@ -8,6 +8,7 @@
  Navigate the UI with either your mouse, or the hotkeys shown on screen.
  
 ## Key binds and tools:
+* (**S**) Select         - No drawing capability, 'safe' tool.
 * (**B**) Brush          - Drag Mouse1 to draw
 * (**E**) Eraser         - Drag Mouse1 to erase any existing paint.
 * (**L**) Line           - Drag Mouse1 to start a line, then let go to end the line. See the preview in real time!
