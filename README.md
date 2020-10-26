@@ -1,7 +1,7 @@
 # PaintUI
  An artwork package written in Processing 3.
  
- Compatible on 64-bit Windows (8, 8.1, 10) and MacOS (10.7+) installations
+ <b>Compatible on 64-bit Windows (8, 8.1, 10) and MacOS (10.7+) installations</b>
 
  With functionality for touchscreens and tablet pens (inc. other styluses)
  
