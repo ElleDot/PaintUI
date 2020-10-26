@@ -153,17 +153,23 @@ void setup() {
 }
 
 void draw() {
+  
+  surface.setTitle("PaintUI - " + int(frameRate) + " fps");
 
   // Tries to make the UI panels match the current setting of light/dark
-  currentBackground = lerpColor(currentBackground, targetBackground, 0.1);
+  if (targetBackground != currentBackground) {
+    for (int i = 0; i < 10; i++) {
+      currentBackground = lerpColor(currentBackground, targetBackground, i*0.01);
+    }
+  }
+  
   canvasLayer.beginDraw();
   GUI.beginDraw();  
   drawLayer.beginDraw();
   gridLayer.beginDraw();
   cursorLayer.beginDraw();
   
-  canvasLayer.fill(canvasColor);
-  canvasLayer.rect(0,0,width,height);
+  canvasLayer.background(canvasColor);
   
   GUI.noStroke();
 
@@ -244,7 +250,7 @@ if (isSquare == false) {
   GUI.stroke(currentTextColor);
   GUI.textAlign(LEFT, CENTER);
   GUI.text("ElleDot 2020", width*0.818,height*0.95);
-  GUI.text("v1.0 - 21/10/20", width*0.818,height*0.9725);
+  GUI.text("v1.0.1 - 21/10/20", width*0.818,height*0.9725);
   GUI.text("Dark Mode", width*0.08,height*0.9725);            // The actual drawing of all the labels
   GUI.text("Enable Grid", width*0.38,height*0.9725);
   GUI.text("Grid Lines", width*0.5,height*0.9725);
@@ -335,9 +341,9 @@ if (isSquare == false) {
   // Draw the artwork next, with the Cursor on the very top.
   image(canvasLayer,0,0);
   image(drawLayer, 0, 0);
-  image(gridLayer,0,0);
+  if (gridActive) {image(gridLayer,0,0);}
   image(GUI, 0, 0);
-  image(lineLayer, 0, 0);
+  if(clickState == 1) { image(lineLayer, 0, 0);}
   cp5.draw();
   image(cursorLayer, 0, 0);
   
@@ -644,7 +650,6 @@ void attemptDraw() {
         drawLayer.strokeCap(ROUND);
       } else {
         drawLayer.strokeCap(PROJECT);
-        println("bruh");
       }
       
       toX = isSquare == false ? pmouseX : mouseX;
@@ -696,6 +701,7 @@ void modifierCheck() {
     GUI.text("x2", width*0.27+brushSize/4, height*0.05-5);
     brushSize = int(cp5.getController("brushSize").getValue());
   }
+  
 }
 
 public void controlEvent(ControlEvent theEvent) {
