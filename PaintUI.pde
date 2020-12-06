@@ -62,12 +62,12 @@ void setup() {
   
   //size(800, 565,P2D);                                                  // 640x480  - 120fps - 4:3  - 0.31MP  - perfect speed, too small
   //size(1000,706,P2D);                                                  // 800x600  - ~87fps - 4:3  - 0.48MP - perfect speed, too small
-  size(1200,636);                                                        // 960x540  - ~80fps - 16:9 - 0.52MP - perfect speed, too short
+  //size(1200,636);                                                      // 960x540  - ~80fps - 16:9 - 0.52MP - perfect speed, too short
   //size(1280,678,P2D);                                                  // 1024x576 - ~70fps - 16:9 - 0.59MP - great speed, decent size
   //size(1280,800,P2D);                                                  // 1024x680 - ~60fps - orig - 0.70MP - Original res :) slow though :(
   //size(1280,903,P2D);                                                  // 1024x768 - ~55fps - 4:3  - 0.79MP - 
-  //size(1600,848,P2D);                                                  // 1280x720 - ~40fps - 16:9 - 0.92MP - too slow, great size
-  noCursor();                                                        // Setting noCursor due to custom ones used by PaintUI
+  size(1600,848,P2D);                                                    // 1280x720 - ~40fps - 16:9 - 0.92MP - too slow, great size
+  noCursor();                                                            // Setting noCursor due to custom ones used by PaintUI
   //noSmooth();
   cp5 = new ControlP5(this);
   filters = new ControlP5(this);
@@ -315,7 +315,7 @@ if (retroActive == false) {
   
   GUI.textAlign(LEFT, CENTER);
   GUI.text("ElleDot 2020", width*0.818,height*0.95);
-  GUI.text("v1.2.1 - 28/10/20", width*0.818,height*0.9725);
+  GUI.text("v1.2.2 - 06/12/20", width*0.818,height*0.9725);
   GUI.text("Dark Mode", width*0.08,height*0.9725);                   // The actual drawing of all the labels
   GUI.text("Enable Grid", width*0.38,height*0.9725);
   
@@ -560,7 +560,7 @@ void greyscaleCanvas() {
 
 void mousePressed() {
   
-  if (toolNumber == 4 && (inBoundsCheck(true) || (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.42))) {
+  if (toolNumber == 4 && (inBoundsCheck(true) || (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.1+(width*0.2)))) {
     canvasColor = get(mouseX-1, mouseY-1);
     queueSaveState();
   } else if (mouseX > width*0.8 && mouseY > height*0.1 && mouseY < height*0.1+(width*0.2) && !filterMenu) {
